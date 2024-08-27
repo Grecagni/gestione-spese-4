@@ -1,8 +1,8 @@
+// Funzione per gestire il login
 function login(email, password) {
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
             const user = userCredential.user;
-            document.getElementById('user-info').innerText = `Utente autenticato: ${user.email}`;
             document.getElementById('login-form').style.display = 'none';
             document.getElementById('app-content').style.display = 'block';
         })
@@ -11,6 +11,7 @@ function login(email, password) {
         });
 }
 
+// Gestione del submit del form di login
 document.getElementById('login-form').addEventListener('submit', function(event) {
     event.preventDefault();
     const email = document.getElementById('email').value;
@@ -18,6 +19,7 @@ document.getElementById('login-form').addEventListener('submit', function(event)
     login(email, password);
 });
 
+// Verifica dello stato di autenticazione
 auth.onAuthStateChanged((user) => {
     if (user) {
         document.getElementById('login-form').style.display = 'none';
