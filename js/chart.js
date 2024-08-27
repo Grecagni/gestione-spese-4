@@ -2,17 +2,17 @@ const ctx = document.getElementById('expenseChart').getContext('2d');
 const expenseChart = new Chart(ctx, {
     type: 'line',
     data: {
-        labels: [], // Date delle spese
+        labels: [],
         datasets: [
             {
                 label: 'Spese di Jack',
-                data: [], // Importi delle spese di Jack
+                data: [],
                 borderColor: 'rgba(75, 192, 192, 1)',
                 fill: false,
             },
             {
                 label: 'Spese di Ste',
-                data: [], // Importi delle spese di Ste
+                data: [],
                 borderColor: 'rgba(153, 102, 255, 1)',
                 fill: false,
             },
@@ -30,10 +30,10 @@ db.collection('expenses').orderBy('date').onSnapshot((querySnapshot) => {
         labels.push(data.date.toDate().toLocaleDateString());
         if (data.user === 'Jack') {
             jackExpenses.push(data.amount);
-            steExpenses.push(0); // Aggiunge zero per Ste se è una spesa di Jack
+            steExpenses.push(0);
         } else {
             steExpenses.push(data.amount);
-            jackExpenses.push(0); // Aggiunge zero per Jack se è una spesa di Ste
+            jackExpenses.push(0);
         }
     });
 
