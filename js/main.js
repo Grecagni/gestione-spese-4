@@ -1,18 +1,16 @@
-// Firebase Configurazione
 const firebaseConfig = {
-    apiKey: "AIzaSyC1vkNeOioENO-AMKGh1pw9nekabJ-WLt8",
-    authDomain: "gestione-spese-4.firebaseapp.com",
-    projectId: "gestione-spese-4",
-    storageBucket: "gestione-spese-4.appspot.com",
-    messagingSenderId: "538040125454",
-    appId: "1:538040125454:web:e43c3cd1163622ed51945f"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// Dark Mode Toggle
 document.getElementById('dark-mode-toggle').addEventListener('click', function() {
     document.body.classList.toggle('dark-mode');
 });
