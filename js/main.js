@@ -15,5 +15,6 @@ const auth = firebase.auth();
 
 // Gestione Dark Mode
 document.getElementById('dark-mode-toggle').addEventListener('click', function() {
-    document.body.classList.toggle('dark-mode');
+    document.body.classList.toggle('bg-dark');
+    document.body.classList.toggle('text-light');
 });
