@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Spese 3</title>
+    
+    <!-- Caricamento di TailwindCSS tramite CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+    <!-- Collegamento al file CSS personalizzato -->
+    <link rel="stylesheet" href="/gestione-spese-3/style.css">
+
+    <!-- Caricamento di React e ReactDOM tramite CDN -->
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Caricamento di Babel per supportare JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div id="root" class="container mx-auto p-4"></div>
+
+    <!-- Firebase compatibile con browser senza moduli ES6 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <!-- Inizializzazione dell'app Firebase -->
+    <script type="text/javascript">
+        // Configurazione Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDxOz1U0FenR22nahHooSF9Te6tpA3gY0w",
+            authDomain: "gestione-spese-3.firebaseapp.com",
+            projectId: "gestione-spese-3",
+            storageBucket: "gestione-spese-3.appspot.com",
+            messagingSenderId: "783893938838",
+            appId: "1:783893938838:web:f124cc544185534bea38b7"
+        };
+        
+        // Inizializzazione Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Aggiungi un log per confermare la connessione
+        db.collection('test').get()
+            .then(() => console.log('Firebase è connesso correttamente.'))
+            .catch(error => console.error('Errore nella connessione a Firebase:', error));
+    </script>
+
+    <!-- Codice React -->
+    <script type="text/babel">
+        function ExpenseCard({ title, date, jackAmount, steAmount, jackDue, steDue, onDelete }) {
+            return (
+                <div className="bg-white p-4 rounded-lg shadow-md my-4 border-l-4 border-blue-500 custom-card">
+                    <h2 className="text-2xl font-bold text-blue-600">{title}</h2>
+                    <p className="text-sm text-gray-500 mb-2">{date}</p>
+                    <ul className="list-disc list-inside mb-2">
+                        <li className="text-gray-700">Jack ha messo: <span className="font-semibold">€{jackAmount}</span></li>
+                        <li className="text-gray-700">Ste ha messo: <span className="font-semibold">€{steAmount}</span></li>
+                        <li className="text-gray-700">Jack doveva: <span className="font-semibold">€{jackDue}</span></li>
+                        <li className="text-gray-700">Ste doveva: <span className="font-semibold">€{steDue}</span></li>
+                    </ul>
+                    <button 
+                        className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-700 custom-button"
+                        onClick={onDelete}
+                    >
+                        Elimina
+                    </button>
+                </div>
+            );
+        }
+
+        function AddExpenseForm({ onAddExpense }) {
+            const [title, setTitle] = React.useState('');
+            const [date, setDate] = React.useState(new Date().toISOString().substr(0, 10)); // Data di default al giorno corrente
+            const [total, setTotal] = React.useState(0);
+            const [jackAmount, setJackAmount] = React.useState(0);
+            const [steAmount, setSteAmount] = React.useState(0);
+            const [jackDue, setJackDue] = React.useState(0);
+            const [steDue, setSteDue] = React.useState(0);
+            const [splitMethod, setSplitMethod] = React.useState('equo'); // 'equo' o 'personalizzato'
+            const [error, setError] = React.useState('');
+
+            const handleSubmit = (event) => {
+                event.preventDefault();
+
+                if (parseFloat(jackAmount) + parseFloat(steAmount) !== parseFloat(total)) {
+                    setError('La somma messa da Jack e Ste deve essere uguale al totale.');
+                    return;
+                }
+
+                if (splitMethod === 'equo') {
+                    setJackDue(parseFloat(total) / 2);
+                    setSteDue(parseFloat(total) / 2);
+                } else if (parseFloat(jackDue) + parseFloat(steDue) !== parseFloat(total)) {
+                    setError('La somma dovuta da Jack e Ste deve essere uguale al totale.');
+                    return;
+                }
+
+                const newExpense = {
+                    title,
+                    date,
+                    total: parseFloat(total),
+                    jackAmount: parseFloat(jackAmount),
+                    steAmount: parseFloat(steAmount),
+                    jackDue: splitMethod === 'equo' ? parseFloat(total) / 2 : parseFloat(jackDue),
+                    steDue: splitMethod === 'equo' ? parseFloat(total) / 2 : parseFloat(steDue),
+                };
+
+                onAddExpense(newExpense);
+
+                // Resetta lo stato dell'errore e i campi del form dopo l'inserimento corretto
+                setError('');
+                setTitle('');
+                setDate(new Date().toISOString().substr(0, 10));
+                setTotal(0);
+                setJackAmount(0);
+                setSteAmount(0);
+                setJackDue(0);
+                setSteDue(0);
+                setSplitMethod('equo');
+            };
+
+            return (
+                <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg shadow-md mb-6">
+                    <h2 className="text-2xl font-bold text-blue-600 mb-4">Aggiungi una nuova spesa</h2>
+                    {error && <p className="text-red-500 mb-4">{error}</p>}
+                    <div className="mb-4">
+                        <label className="block text-gray-700">Titolo</label>
+                        <input 
+                            type="text" 
+                            className="mt-1 p-2 w-full border rounded"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-gray-700">Data</label>
+                        <input 
+                            type="date" 
+                            className="mt-1 p-2 w-full border rounded"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-gray-700">Totale</label>
+                        <input 
+                            type="number" 
+                            className="mt-1 p-2 w-full border rounded"
+                            value={total}
+                            onChange={(e) => setTotal(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-gray-700">Jack ha messo</label>
+                        <input 
+                            type="number" 
+                            className="mt-1 p-2 w-full border rounded"
+                            value={jackAmount}
+                            onChange={(e) => setJackAmount(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-gray-700">Ste ha messo</label>
+                        <input 
+                            type="number" 
+                            className="mt-1 p-2 w-full border rounded"
+                            value={steAmount}
+                            onChange={(e) => setSteAmount(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-gray-700">Metodo di suddivisione</label>
+                        <select 
+                            className="mt-1 p-2 w-full border rounded"
+                            value={splitMethod}
+                            onChange={(e) => setSplitMethod(e.target.value)}
+                        >
+                            <option value="equo">Equo</option>
+                            <option value="personalizzato">Personalizzato</option>
+                        </select>
+                    </div>
+                    {splitMethod === 'personalizzato' && (
+                        <>
+                            <div className="mb-4">
+                                <label className="block text-gray-700">Jack doveva</label>
+                                <input 
+                                    type="number" 
+                                    className="mt-1 p-2 w-full border rounded"
+                                    value={jackDue}
+                                    onChange={(e) => setJackDue(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="mb-4">
+                                <label className="block text-gray-700">Ste doveva</label>
+                                <input 
+                                    type="number" 
+                                    className="mt-1 p-2 w-full border rounded"
+                                    value={steDue}
+                                    onChange={(e) => setSteDue(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </>
+                    )}
+                    <button 
+                        type="submit" 
+                        className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
+                    >
+                        Aggiungi Spesa
+                    </button>
+                </form>
+            );
+        }
+
+        function ExpenseHistory({ expenses, onDeleteExpense }) {
+            const [viewMode, setViewMode] = React.useState('card'); // 'card' o 'table'
+
+            const handleDelete = (id) => {
+                db.collection('expenses').doc(id).delete()
+                    .then(() => onDeleteExpense(id))
+                    .catch(error => console.error('Errore nella rimozione della spesa:', error));
+            };
+
+            return (
+                <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+                    <h2 className="text-2xl font-bold text-blue-600 mb-4">Storico delle Spese</h2>
+                    <div className="mb-4">
+                        <button 
+                            className={`px-4 py-2 rounded ${viewMode === 'card' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                            onClick={() => setViewMode('card')}
+                        >
+                            Vista Card
+                        </button>
+                        <button 
+                            className={`ml-2 px-4 py-2 rounded ${viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+                            onClick={() => setViewMode('table')}
+                        >
+                            Vista Tabella
+                        </button>
+                    </div>
+                    {expenses.length === 0 && <p className="text-gray-500">Nessuna spesa registrata.</p>}
+                    {viewMode === 'card' && (
+                        <div>
+                            {expenses.map((expense, index) => (
+                                <ExpenseCard
+                                    key={index}
+                                    title={expense.title}
+                                    date={expense.date}
+                                    jackAmount={expense.jackAmount}
+                                    steAmount={expense.steAmount}
+                                    jackDue={expense.jackDue}
+                                    steDue={expense.steDue}
+                                    onDelete={() => handleDelete(expense.id)}
+                                />
+                            ))}
+                        </div>
+                    )}
+                    {viewMode === 'table' && (
+                        <table className="min-w-full bg-white border-collapse">
+                            <thead>
+                                <tr>
+                                    <th className="px-4 py-2 border">Titolo</th>
+                                    <th className="px-4 py-2 border">Data</th>
+                                    <th className="px-4 py-2 border">Jack ha messo</th>
+                                    <th className="px-4 py-2 border">Ste ha messo</th>
+                                    <th className="px-4 py-2 border">Jack doveva</th>
+                                    <th className="px-4 py-2 border">Ste doveva</th>
+                                    <th className="px-4 py-2 border">Azione</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {expenses.map((expense, index) => (
+                                    <tr key={index}>
+                                        <td className="px-4 py-2 border">{expense.title}</td>
+                                        <td className="px-4 py-2 border">{expense.date}</td>
+                                        <td className="px-4 py-2 border">€{expense.jackAmount}</td>
+                                        <td className="px-4 py-2 border">€{expense.steAmount}</td>
+                                        <td className="px-4 py-2 border">€{expense.jackDue}</td>
+                                        <td className="px-4 py-2 border">€{expense.steDue}</td>
+                                        <td className="px-4 py-2 border">
+                                            <button 
+                                                className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-700"
+                                                onClick={() => handleDelete(expense.id)}
+                                            >
+                                                Elimina
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            );
+        }
+
+        function Saldo({ expenses }) {
+            const totaleJackMesso = expenses.reduce((acc, expense) => acc + expense.jackAmount, 0);
+            const totaleJackDovuto = expenses.reduce((acc, expense) => acc + expense.jackDue, 0);
+            const saldoTotale = totaleJackMesso - totaleJackDovuto;
+
+            return (
+                <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+                    <h2 className="text-2xl font-bold text-blue-600 mb-4">Saldo Complessivo</h2>
+                    {saldoTotale > 0 && <p className="text-green-500">Ste deve a Jack €{Math.abs(saldoTotale)}</p>}
+                    {saldoTotale < 0 && <p className="text-red-500">Jack deve a Ste €{Math.abs(saldoTotale)}</p>}
+                    {saldoTotale === 0 && <p className="text-gray-500">Jack e Ste sono pari.</p>}
+                </div>
+            );
+        }
+
+        function AuthForm({ onLogin }) {
+            const [email, setEmail] = React.useState('');
+            const [password, setPassword] = React.useState('');
+            const [error, setError] = React.useState('');
+
+            const handleLogin = (event) => {
+                event.preventDefault();
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(userCredential => {
+                        onLogin(userCredential.user);
+                    })
+                    .catch(error => {
+                        setError(error.message);
+                    });
+            };
+
+            return (
+                <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+                    <h2 className="text-2xl font-bold text-blue-600 mb-4">Accedi</h2>
+                    {error && <p className="text-red-500 mb-4">{error}</p>}
+                    <form onSubmit={handleLogin}>
+                        <div className="mb-4">
+                            <label className="block text-gray-700">Email</label>
+                            <input 
+                                type="email" 
+                                className="mt-1 p-2 w-full border rounded"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-gray-700">Password</label>
+                            <input 
+                                type="password" 
+                                className="mt-1 p-2 w-full border rounded"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="flex space-x-4">
+                            <button 
+                                type="submit" 
+                                className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
+                            >
+                                Accedi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            );
+        }
+
+        function App() {
+            const [user, setUser] = React.useState(null);
+            const [expenses, setExpenses] = React.useState([]); // Array per memorizzare le spese
+
+            React.useEffect(() => {
+                if (user) {
+                    const unsubscribe = db.collection('expenses').where('userId', '==', user.uid)
+                        .onSnapshot(snapshot => {
+                            const fetchedExpenses = snapshot.docs.map(doc => ({
+                                id: doc.id,
+                                ...doc.data(),
+                            }));
+                            setExpenses(fetchedExpenses);
+                        });
+                    return () => unsubscribe();
+                }
+            }, [user]);
+
+            const addExpense = (expense) => {
+                db.collection('expenses').add({
+                    ...expense,
+                    userId: user.uid,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+            };
+
+            const deleteExpense = (id) => {
+                setExpenses(expenses.filter(expense => expense.id !== id));
+            };
+
+            if (!user) {
+                return <AuthForm onLogin={setUser} />;
+            }
+
+            return (
+                <div>
+                    <h1 className="text-3xl font-bold text-center text-blue-700 my-6">Gestione Spese</h1>
+                    <button 
+                        className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-700 mb-6"
+                        onClick={() => auth.signOut().then(() => setUser(null))}
+                    >
+                        Logout
+                    </button>
+                    <Saldo expenses={expenses} />
+                    <AddExpenseForm onAddExpense={addExpense} />
+                    <ExpenseHistory expenses={expenses} onDeleteExpense={deleteExpense} />
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
