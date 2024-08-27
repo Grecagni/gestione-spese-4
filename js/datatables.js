@@ -11,5 +11,7 @@ $(document).ready(function() {
                 data.category
             ]).draw();
         });
+    }).catch((error) => {
+        console.error("Errore nel caricamento delle spese:", error);
     });
 });
